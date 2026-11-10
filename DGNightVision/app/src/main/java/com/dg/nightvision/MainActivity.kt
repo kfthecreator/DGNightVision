@@ -9,7 +9,10 @@ import android.hardware.camera2.CaptureRequest
 import android.os.Bundle
 import android.os.SystemClock
 import android.util.Size
+import android.view.GestureDetector
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup.LayoutParams.MATCH_PARENT
 import android.view.ViewGroup.LayoutParams.WRAP_CONTENT
 import android.view.WindowManager
@@ -34,6 +37,9 @@ import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import java.io.ByteArrayOutputStream
 import java.net.Inet4Address
 import java.net.NetworkInterface
@@ -50,6 +56,8 @@ class MainActivity : ComponentActivity() {
     private var yBuf = ByteArray(0)
     private var lastJpeg = 0L
     private var longExp = false
+    private lateinit var topBar: LinearLayout
+    private lateinit var bar: LinearLayout
 
     private val askCamera =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
@@ -66,14 +74,48 @@ class MainActivity : ComponentActivity() {
         val root = FrameLayout(this)
         root.addView(frameView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
 
+        topBar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setBackgroundColor(0x88000000.toInt())
+        }
         val info = TextView(this).apply {
             setTextColor(0xFF99FF99.toInt())
-            setBackgroundColor(0x88000000.toInt())
-            setPadding(24, 12, 24, 12)
+            setPadding(24, 12, 16, 12)
         }
-        root.addView(info, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.TOP or Gravity.START))
+        topBar.addView(info)
+        val vrBtn = Button(this).apply {
+            text = "VR"
+            isAllCaps = false
+            minWidth = 0
+            minimumWidth = 0
+            setPadding(24, 0, 24, 0)
+            setOnClickListener { setVr(true) }
+        }
+        topBar.addView(vrBtn, LinearLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT))
+        root.addView(topBar, FrameLayout.LayoutParams(WRAP_CONTENT, WRAP_CONTENT, Gravity.TOP or Gravity.START))
 
-        val bar = LinearLayout(this).apply {
+        // VR modunda: tek dokunuş = mod değiştir, çift dokunuş = VR'dan çık
+        val gestures = GestureDetector(this, object : GestureDetector.SimpleOnGestureListener() {
+            override fun onDown(e: MotionEvent): Boolean = true
+            override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                if (!frameView.vrMode) return false
+                processor.mode = when (processor.mode) {
+                    NightProcessor.Mode.NIGHT -> NightProcessor.Mode.THERMAL
+                    NightProcessor.Mode.THERMAL -> NightProcessor.Mode.RAW
+                    NightProcessor.Mode.RAW -> NightProcessor.Mode.NIGHT
+                }
+                return true
+            }
+            override fun onDoubleTap(e: MotionEvent): Boolean {
+                if (!frameView.vrMode) return false
+                setVr(false)
+                return true
+            }
+        })
+        frameView.setOnTouchListener { _, e -> gestures.onTouchEvent(e) }
+
+        bar = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
             setBackgroundColor(0x88000000.toInt())
@@ -115,6 +157,22 @@ class MainActivity : ComponentActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED) startCamera()
         else askCamera.launch(Manifest.permission.CAMERA)
+    }
+
+    /** VR gözlük modu: görüntü iki göz için yan yana, butonlar ve sistem çubukları gizli. */
+    private fun setVr(on: Boolean) {
+        frameView.vrMode = on
+        topBar.visibility = if (on) View.GONE else View.VISIBLE
+        bar.visibility = if (on) View.GONE else View.VISIBLE
+        val ctl = WindowCompat.getInsetsController(window, window.decorView)
+        if (on) {
+            ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            ctl.hide(WindowInsetsCompat.Type.systemBars())
+            Toast.makeText(this, "VR: dokun = mod değiştir, çift dokun = çık", Toast.LENGTH_LONG).show()
+        } else {
+            ctl.show(WindowInsetsCompat.Type.systemBars())
+        }
+        frameView.invalidate()
     }
 
     private fun startCamera() {
