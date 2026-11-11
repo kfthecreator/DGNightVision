@@ -153,10 +153,6 @@ class MainActivity : ComponentActivity() {
 
         server.start()
         info.text = "DGNightVision"
-        // Tap the title to show the Quest address
-        info.setOnClickListener {
-            Toast.makeText(this, "Quest browser: http://${localIp()}:8080", Toast.LENGTH_LONG).show()
-        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED) startCamera()
