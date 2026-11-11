@@ -62,7 +62,7 @@ class MainActivity : ComponentActivity() {
     private val askCamera =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
             if (ok) startCamera()
-            else Toast.makeText(this, "Kamera izni gerekli", Toast.LENGTH_LONG).show()
+            else Toast.makeText(this, "Camera permission required", Toast.LENGTH_LONG).show()
         }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -127,14 +127,14 @@ class MainActivity : ComponentActivity() {
                 setOnClickListener { f() }
             }.also { bar.addView(it) }
 
-        btn("Gece") { processor.mode = NightProcessor.Mode.NIGHT }
-        btn("Termal efekt") { processor.mode = NightProcessor.Mode.THERMAL }
-        btn("Ham") { processor.mode = NightProcessor.Mode.RAW }
-        val expBtn = btn("Uzun pozlama: kapalı") {}
+        btn("Night") { processor.mode = NightProcessor.Mode.NIGHT }
+        btn("Thermal effect") { processor.mode = NightProcessor.Mode.THERMAL }
+        btn("Raw") { processor.mode = NightProcessor.Mode.RAW }
+        val expBtn = btn("Long exposure: off") {}
         expBtn.setOnClickListener {
             longExp = !longExp
             setLongExposure(longExp)
-            expBtn.text = if (longExp) "Uzun pozlama: açık" else "Uzun pozlama: kapalı"
+            expBtn.text = if (longExp) "Long exposure: on" else "Long exposure: off"
         }
         val seek = SeekBar(this).apply {
             max = 100
@@ -152,7 +152,11 @@ class MainActivity : ComponentActivity() {
         setContentView(root)
 
         server.start()
-        info.text = "Quest tarayıcısı: http://${localIp()}:8080"
+        info.text = "DGNightVision"
+        // Tap the title to show the Quest address
+        info.setOnClickListener {
+            Toast.makeText(this, "Quest browser: http://${localIp()}:8080", Toast.LENGTH_LONG).show()
+        }
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
             PackageManager.PERMISSION_GRANTED) startCamera()
@@ -168,7 +172,7 @@ class MainActivity : ComponentActivity() {
         if (on) {
             ctl.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             ctl.hide(WindowInsetsCompat.Type.systemBars())
-            Toast.makeText(this, "VR: dokun = mod değiştir, çift dokun = çık", Toast.LENGTH_LONG).show()
+            Toast.makeText(this, "VR: tap = change mode, double tap = exit", Toast.LENGTH_LONG).show()
         } else {
             ctl.show(WindowInsetsCompat.Type.systemBars())
         }
@@ -269,7 +273,7 @@ class MainActivity : ComponentActivity() {
         NetworkInterface.getNetworkInterfaces().toList()
             .flatMap { it.inetAddresses.toList() }
             .firstOrNull { !it.isLoopbackAddress && it is Inet4Address && it.isSiteLocalAddress }
-            ?.hostAddress ?: "WiFi yok"
+            ?.hostAddress ?: "no WiFi"
     } catch (_: Exception) { "?" }
 
     override fun onDestroy() {

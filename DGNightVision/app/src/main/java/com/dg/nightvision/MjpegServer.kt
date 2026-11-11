@@ -5,7 +5,7 @@ import java.net.Socket
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.concurrent.thread
 
-/** Görüntüyü WiFi üzerinden Quest tarayıcısına canlı yayınlayan küçük web sunucusu. */
+/** Small web server that streams the image live to the Quest browser over WiFi. */
 class MjpegServer(private val port: Int) {
     @Volatile private var latest: ByteArray? = null
     @Volatile private var server: ServerSocket? = null
@@ -78,7 +78,7 @@ class MjpegServer(private val port: Int) {
     companion object {
         private const val PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DG Gece Görüşü</title>
+<title>DGNightVision</title>
 <style>html,body{margin:0;height:100%;background:#000;overflow:hidden}
 img{width:100%;height:100%;object-fit:contain;display:block}</style></head>
 <body><img src="/stream" onclick="document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen()">
