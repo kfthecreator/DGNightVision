@@ -7,6 +7,7 @@
 
     <application
         android:label="DGNightVision"
+        android:icon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
         <activity
             android:name=".MainActivity"
